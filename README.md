@@ -62,7 +62,7 @@ First, setup the necessary enviro variables setup:
 ```
 export LEFTY_DATA_DIR=/your/path/to/data
 export LEFTY_JAVA_OPTS='-Xmx32m -Xms32m'
-export LEFTY_JOB_DIR=/your/path/to/lefty-hamming/target
+export LEFTY_JOB_DIR=/your/path/to/lefty-hamming-distance/target
 ```
 
 Execute the run script from the root directory as follows:
