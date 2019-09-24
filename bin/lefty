@@ -1,0 +1,108 @@
+#!/bin/sh
+
+# CONTROLLING STARTUP:
+#
+# This script relies on few environment variables to determine startup
+# behavior, those variables are:
+#
+#   LEFTY_CLASSPATH -- A Java classpath containing everything necessary to run.
+#   JAVA_OPTS    -- Additional arguments to the JVM for heap size, etc
+#   LEFTY_JAVA_OPTS -- External Java Opts on top of the defaults set
+#
+#
+# Optionally, exact memory values can be set using the following values, note,
+# they can still be set using the `LEFTY_JAVA_OPTS`. Sample format include "512m", and "10g".
+#
+#   LEFTY_HEAP_SIZE -- Sets both the minimum and maximum memory to allocate (recommended)
+#
+
+CDPATH=""
+SCRIPT="$0"
+
+# SCRIPT may be an arbitrarily deep series of symlinks. Loop until we have the concrete path.
+while [ -h "$SCRIPT" ] ; do
+  ls=`ls -ld "$SCRIPT"`
+  # Drop everything prior to ->
+  link=`expr "$ls" : '.*-> \(.*\)$'`
+  if expr "$link" : '/.*' > /dev/null; then
+    SCRIPT="$link"
+  else
+    SCRIPT=`dirname "$SCRIPT"`/"$link"
+  fi
+done
+
+# determine lefty home
+LEFTY_HOME=`dirname "$SCRIPT"`/..
+
+# make LEFTY_HOME absolute
+LEFTY_HOME=`cd "$LEFTY_HOME"; pwd`
+
+if [ -x "$JAVA_HOME/bin/java" ]; then
+    JAVA="$JAVA_HOME/bin/java"
+else
+    JAVA=`which java`
+fi
+
+if [ ! -x "$JAVA" ]; then
+    echo "Could not find any executable java binary. Please install java in your PATH or set JAVA_HOME"
+    exit 1
+fi
+
+if [ -z "$LEFTY_CLASSPATH" ]; then
+    LEFTY_CLASSPATH="$LEFTY_HOME/target/uber-lefty.jar"
+fi
+
+if [ -z "$LEFTY_DATA_DIR" ]; then
+    LEFTY_DATA_DIR="$LEFTY_HOME/data"
+fi
+
+if [ -z "$LEFTY_JOB_DIR" ]; then
+    LEFTY_JOB_DIR="$LEFTY_HOME/job"
+fi
+
+if [ -z "$LEFTY_JAVA_OPTS" ]; then
+    LEFTY_JAVA_OPTS="-Xmx32m -Xms32m"
+fi
+
+# don't let JAVA_TOOL_OPTIONS slip in (e.g. crazy agents in ubuntu)
+# works around https://bugs.launchpad.net/ubuntu/+source/jayatana/+bug/1441487
+if [ "x$JAVA_TOOL_OPTIONS" != "x" ]; then
+    echo "Warning: Ignoring JAVA_TOOL_OPTIONS=$JAVA_TOOL_OPTIONS"
+    echo "Please pass JVM parameters via JAVA_OPTS instead"
+    unset JAVA_TOOL_OPTIONS
+fi
+
+# Special-case path variables.
+case `uname` in
+    CYGWIN*)
+        LEFTY_CLASSPATH=`cygpath -p -w "$LEFTY_CLASSPATH"`
+        LEFTY_HOME=`cygpath -p -w "$LEFTY_HOME"`
+    ;;
+esac
+
+# full hostname passed through cut for portability on systems that do not support hostname -s
+# export on separate line for shells that do not support combining definition and export
+HOSTNAME=`hostname | cut -d. -f1`
+export HOSTNAME
+
+# manual parsing to find out, if process should be detached
+daemonized=`echo $* | egrep -- '(^-d |-d$| -d |--daemonize$|--daemonize )'`
+if [ -z "$daemonized" ] ; then
+    exec "$JAVA" $JAVA_OPTS $LEFTY_JAVA_OPTS -Dlefty.path.home="$LEFTY_HOME" -Dspring.profiles.active=live -cp "$LEFTY_CLASSPATH" \
+          com.dataflow.lefty.Launcher "$@"
+else
+    exec "$JAVA" $JAVA_OPTS $LEFTY_JAVA_OPTS -Dlefty.path.home="$LEFTY_HOME" -Dspring.profiles.active=live -cp "$LEFTY_CLASSPATH" \
+          com.dataflow.lefty.Launcher "$@" <&- &
+    retval=$?
+    pid=$!
+    [ $retval -eq 0 ] || exit $retval
+    if [ ! -z "$LEFTY_STARTUP_SLEEP_TIME" ]; then
+      sleep $LEFTY_STARTUP_SLEEP_TIME
+    fi
+    if ! ps -p $pid > /dev/null ; then
+      exit 1
+    fi
+    exit 0
+fi
+
+exit $?
