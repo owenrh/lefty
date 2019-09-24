@@ -9,7 +9,7 @@ all ur bytes r belong to us ...
 ```
 
 ### Overview
-Lefty is a proof-of-concept that applies brute force search in combination with mechanical sympathy to provide search performance which beats algorithmic approaches in certain niches.
+Lefty is a proof-of-concept that applies brute force search in combination with mechanical sympathy to provide search performance which beats algorithmic approaches in certain niches - most notably similarity search.
 
 I developed this as a side project back in 2016. It is implemented in Java, using off-heap memory, mixed in with a bit of Springboot. 
 
