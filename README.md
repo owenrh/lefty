@@ -41,7 +41,7 @@ Then build and `mvn install` the API project. This will allow you to build the h
 #### Test data generation
 Lefty contains a test generator which can be fired up from the Lefty root directory as follows ...
 
-First setup your environment:
+First setup your environment, to locate the place where you want to store the generated data:
 
 ```
 export LEFTY_DATA_DIR=/your/path/to/data
@@ -49,7 +49,7 @@ export LEFTY_DATA_DIR=/your/path/to/data
 
 then run the generator:
 ```
-java -Dspring.profiles.active=generator -Xmx1g -Xms1g -cp target/uber-lefty.jar com.agilesoft.lefty.Generator <insert number of records here>
+java -Dspring.profiles.active=generator -Xmx1g -Xms1g -cp target/uber-lefty.jar com.dataflow.lefty.Generator <insert number of records here>
 ```
 
 Things to keep in mind at this point:
