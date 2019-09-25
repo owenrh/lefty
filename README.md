@@ -78,3 +78,5 @@ You should now be able to hit Lefty with a REST request of the following form:
 curl -d '{ "maxDistance": "11", "comparisonHash": "4164436981991581735" }' -H 'Content-Type: application/json' http://localhost:8080/compute
 ```
 
+Note, a Java Long is used to store/represent the 64 bit hash. 
+
